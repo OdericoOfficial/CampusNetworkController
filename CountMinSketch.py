@@ -1,12 +1,14 @@
 import random
 import array
 import hashlib
+import threading
 
 class CountMinSketch:
     def __init__(self, tableSize, hashFuncCount):
         self.__tableSize = tableSize
         self.__hashFuncCount = hashFuncCount
         self.__tables = []
+        self.__lock = threading.Lock()
         for _ in range(0, self.__hashFuncCount):
             table = array.array('l', (0 for _ in range(0, self.__tableSize)))
             self.__tables.append(table)
@@ -18,8 +20,10 @@ class CountMinSketch:
             yield int(md5Value.hexdigest(), 16) % self.__tableSize
         
     def add(self, key):
-        for table, i in zip(self.__tables, self.__getHash(key)):
-            table[i] += 1
+        with self.__lock:
+            for table, i in zip(self.__tables, self.__getHash(key)):
+                table[i] += 1
             
     def get(self, key):
-        return min(table[i] for table, i in zip(self.__tables, self.__getHash(key)))
+        with self.__lock:    
+            return min(table[i] for table, i in zip(self.__tables, self.__getHash(key)))
