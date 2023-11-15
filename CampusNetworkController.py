@@ -7,6 +7,8 @@ from CountMinSketch import CountMinSketch
 
 app = FastAPI()
 
+tableSize = 1000
+hashFuncCount = 5
 count = 10
 address = ["10.0.0.1", "10.0.0.2", "10.0.0.3"]
 port = {
@@ -24,7 +26,7 @@ port = {
         }
     }
 
-sketch = CountMinSketch()
+sketch = CountMinSketch(tableSize, hashFuncCount)
 class Item(BaseModel):
     src: str
     dst: str
@@ -47,7 +49,14 @@ async def Send():
                      dst = address[j]) / TCP(sport = port[address[i]]["sport"],
                                              dport = port[address[j]]["dport"])
         send(package)
-    sniff(filter = "tcp", prn = Callback)    
+
+@app.get("/sniff")
+async def Sniff():
+    sniff(filter = "tcp", prn = Callback)
+    
+@app.get("/clear")
+async def Clear():
+    sketch = CountMinSketch(tableSize, hashFuncCount)
 
 @app.post("/sketch")
 async def Sketch(item: Item = Body(...)):
